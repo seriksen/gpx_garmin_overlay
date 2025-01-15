@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}Video{% endblock %}
+
+{% block content %}
+<h1>Video Player</h1>
+
+<div class="video-container">
+    {% if video_path %}
+        <div class="video-player">
+            <video id="mainVideo" width="640" height="480">
+                <source id="videoSource" src="{{ url_for('uploaded_file', filename=video_path.split('/')[-1]) }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <div class="video-metadata">
+            <h2>Video Metadata</h2>
+            {% if video_info %}
+                <ul>
+                    <li>Duration: {{ video_info.duration|round(2) }} seconds</li>
+                    <li>Resolution: {{ video_info.resolution }}</li>
+                    <li>FPS: {{ video_info.fps|round(2) }}</li>
+                    <li>Frame Count: {{ video_info.frame_count }}</li>
+                    <li>Codec: {{ video_info.codec }}</li>
+                    <li>Bitrate: {{ video_info.bitrate }}</li>
+                    <li>File Size: 
+                        {% set kb = video_info.file_size / 1024 %}
+                        {% if kb < 1024 %}
+                            {{ kb|round(2) }} KB
+                        {% elif kb < 1048576 %}
+                            {{ (kb / 1024)|round(2) }} MB
+                        {% else %}
+                            {{ (kb / 1048576)|round(2) }} GB
+                        {% endif %}
+                    </li>
+                </ul>
+            {% else %}
+                <p>Unable to retrieve video metadata.</p>
+            {% endif %}
+        </div>
+    {% else %}
+        <p>No video file found. Please upload a video file.</p>
+    {% endif %}
+</div>
+
+<!-- Button to show cropping controls -->
+<button id="cropButton" class="btn btn-primary mt-3">Press to Crop Video</button>
+
+<!-- Cropping Section (Initially hidden) -->
+<div id="cropControls" style="display: none;" class="mt-3">
+    <h2>Set Crop Times</h2>
+
+    <!-- Start Time Slider -->
+    <div class="slider-container mb-3">
+        <label for="startTime">Start Time: <span id="startTimeDisplay">0</span> seconds</label>
+        <input type="range" id="startTime" name="start_time" min="0" max="{{ video_info.duration }}" value="0" step="{{ 1 / video_info.fps|round(2) }}">
+    </div>
+
+    <!-- End Time Slider -->
+    <div class="slider-container mb-3">
+        <label for="endTime">End Time: <span id="endTimeDisplay">{{ video_info.duration }}</span> seconds</label>
+        <input type="range" id="endTime" name="end_time" min="0" max="{{ video_info.duration }}" value="{{ video_info.duration }}" step="{{ 1 / video_info.fps|round(2) }}">
+    </div>
+
+    <!-- Preview button to play the cropped preview -->
+    <button id="previewButton" class="btn btn-success">Preview Cropped Video</button>
+</div>
+
+<!-- Custom Video Controls (Initially hidden) -->
+<div id="croppedVideoContainer" class="mt-3" style="display: none;">
+    <h2>Cropped Video</h2>
+    <video id="croppedVideo" width="640" height="480" loop>
+        <source src="{{ url_for('uploaded_file', filename=video_path.split('/')[-1]) }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <!-- Custom controls for the cropped video -->
+    <div id="customControls">
+        <button id="playPauseButton" class="btn btn-secondary">Play</button>
+        <span id="currentTimeDisplay">0:00</span> / <span id="durationDisplay">0:00</span>
+        <input type="range" id="seekBar" min="0" value="0" step="0.01">
+    </div>
+</div>
+
+<script>
+    // Show the cropping controls when the 'Press to Crop Video' button is clicked
+    document.getElementById('cropButton').addEventListener('click', function() {
+        const cropControls = document.getElementById('cropControls');
+        cropControls.style.display = (cropControls.style.display === 'none') ? 'block' : 'none';
+    });
+
+    // Get references to sliders, display spans, and video elements
+    const startTimeSlider = document.getElementById('startTime');
+    const endTimeSlider = document.getElementById('endTime');
+    const startTimeDisplay = document.getElementById('startTimeDisplay');
+    const endTimeDisplay = document.getElementById('endTimeDisplay');
+    const croppedVideo = document.getElementById('croppedVideo');
+
+    const playPauseButton = document.getElementById('playPauseButton');
+    const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+    const durationDisplay = document.getElementById('durationDisplay');
+    const seekBar = document.getElementById('seekBar');
+
+    // Initialize the cropping preview state
+    let startTime = 0.00;
+    let endTime = parseFloat(endTimeSlider.value).toFixed(2);
+    let duration = endTime - startTime;
+
+    // Update the start and end time display as the slider values change
+    startTimeSlider.addEventListener('input', function() {
+    startTimeDisplay.textContent = parseFloat(startTimeSlider.value).toFixed(2);
+    startTime = parseFloat(startTimeSlider.value);
+    if (startTime >= endTime) {
+        endTime = startTime;
+        endTimeSlider.value = startTime;
+        endTimeDisplay.textContent = parseFloat(startTime).toFixed(2);
+    }
+    updateDuration();
+    });
+
+    endTimeSlider.addEventListener('input', function() {
+    endTimeDisplay.textContent = parseFloat(endTimeSlider.value).toFixed(2);
+    endTime = parseFloat(endTimeSlider.value);
+    if (endTime <= startTime) {
+        startTime = endTime;
+        startTimeSlider.value = endTime;
+        startTimeDisplay.textContent = parseFloat(endTime).toFixed(2);
+    }
+    updateDuration();
+    });
+
+    function updateDuration() {
+        duration = endTime - startTime;
+        durationDisplay.textContent = formatTime(duration);
+        seekBar.max = duration;
+    }
+
+    // Play the cropped video preview when 'Preview Cropped Video' is clicked
+    document.getElementById('previewButton').addEventListener('click', function() {
+        const croppedVideoContainer = document.getElementById('croppedVideoContainer');
+        croppedVideoContainer.style.display = 'block';  // Show cropped video section
+        croppedVideo.currentTime = startTime;
+        duration = endTime - startTime;
+        durationDisplay.textContent = formatTime(duration);
+        seekBar.max = duration;
+
+        croppedVideo.play();
+        playPauseButton.textContent = 'Pause';
+    });
+
+    // Custom play/pause functionality
+    playPauseButton.addEventListener('click', function() {
+        if (croppedVideo.paused) {
+            croppedVideo.play();
+            playPauseButton.textContent = 'Pause';
+        } else {
+            croppedVideo.pause();
+            playPauseButton.textContent = 'Play';
+        }
+    });
+
+    // Update the seek bar and time display as the video plays
+    croppedVideo.addEventListener('timeupdate', function() {
+        let currentTime = croppedVideo.currentTime - startTime;
+        if (currentTime >= duration) {
+            croppedVideo.currentTime = startTime;  // Loop back to the start of the cropped section
+        }
+        seekBar.value = currentTime;
+        currentTimeDisplay.textContent = formatTime(currentTime);
+    });
+
+    // Seek to a different point in the video
+    seekBar.addEventListener('input', function() {
+        let seekTo = startTime + (seekBar.value / duration) * duration;
+        croppedVideo.currentTime = seekTo;
+    });
+
+    // Helper function to format time as mm:ss
+    function formatTime(seconds) {
+        let min = Math.floor(seconds / 60);
+        let sec = Math.floor(seconds % 60);
+        return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+    }
+</script>
+
+{% endblock %}

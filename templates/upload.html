@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload{% endblock %}
+
+{% block content %}
+<h1>Upload Files</h1>
+
+<form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data">
+    <div class="upload-container">
+        <div class="drop-zone">
+            <span class="drop-zone__prompt">Drop video file here or click to upload</span>
+            <input type="file" name="video" class="drop-zone__input" accept=".mp4,.mov" required>
+        </div>
+        <div id="video-file-name"></div>
+    </div>
+
+    <div class="upload-container">
+        <div class="drop-zone">
+            <span class="drop-zone__prompt">Drop fitness data file here or click to upload</span>
+            <input type="file" name="fitness_data" class="drop-zone__input" accept=".fit" required>
+        </div>
+        <div id="fitness-file-name"></div>
+    </div>
+    
+    <div>
+        <input type="submit" value="Upload Files" id="submit-btn" disabled>
+    </div>
+</form>
+
+<script>
+    const dropZones = document.querySelectorAll('.drop-zone');
+    const fileInputs = document.querySelectorAll('.drop-zone__input');
+    const submitBtn = document.getElementById('submit-btn');
+    const videoFileName = document.getElementById('video-file-name');
+    const fitnessFileName = document.getElementById('fitness-file-name');
+
+    function updateSubmitButton() {
+        const videoFile = fileInputs[0].files[0];
+        const fitnessFile = fileInputs[1].files[0];
+        submitBtn.disabled = !(videoFile && fitnessFile);
+    }
+
+    function updateFileName(input, fileNameElement) {
+        if (input.files && input.files[0]) {
+            fileNameElement.textContent = input.files[0].name;
+        } else {
+            fileNameElement.textContent = '';
+        }
+    }
+
+    fileInputs.forEach((input, index) => {
+        input.addEventListener('change', (e) => {
+            updateFileName(input, index === 0 ? videoFileName : fitnessFileName);
+            updateSubmitButton();
+        });
+    });
+
+    dropZones.forEach((dropZone, index) => {
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            
+            if (file) {
+                fileInputs[index].files = dt.files;
+                updateFileName(fileInputs[index], index === 0 ? videoFileName : fitnessFileName);
+                updateSubmitButton();
+            }
+        });
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function highlight(e) {
+        e.target.classList.add('drop-zone--over');
+    }
+
+    function unhighlight(e) {
+        e.target.classList.remove('drop-zone--over');
+    }
+</script>
+{% endblock %}

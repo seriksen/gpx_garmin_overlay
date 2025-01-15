@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bound Drag and Resize Image</title>
+    <style>
+        .wrapper {
+            position: relative;
+        }
+        .resizable {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: url('/static/image2.jpg') no-repeat center center;
+            background-size: cover;
+            border: 2px solid #ccc;
+            resize: both;
+            overflow: auto;
+        }
+        .container {
+            position: relative;
+            width: 600px;
+            height: 400px;
+            background: url('/static/image1.jpg') no-repeat center center;
+            background-size: cover;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="image1-container">
+    <div class="resizable" id="image2"></div>
+</div>
+
+<script>
+    const resizable = document.getElementById('image2');
+    const container = document.getElementById('image1-container');
+
+    let offsetX = 0, offsetY = 0;
+
+    // Get the boundaries of the base image container
+    const containerRect = container.getBoundingClientRect();
+
+    resizable.addEventListener('mousedown', function(e) {
+        offsetX = e.clientX - resizable.offsetLeft;
+        offsetY = e.clientY - resizable.offsetTop;
+        
+        document.onmousemove = function(e) {
+            let x = e.clientX - offsetX;
+            let y = e.clientY - offsetY;
+
+            // Constrain dragging within the base image
+            const maxX = containerRect.width - resizable.offsetWidth;
+            const maxY = containerRect.height - resizable.offsetHeight;
+
+            // Prevent dragging outside the left and top borders
+            if (x < 0) x = 0;
+            if (y < 0) y = 0;
+
+            // Prevent dragging outside the right and bottom borders
+            if (x > maxX) x = maxX;
+            if (y > maxY) y = maxY;
+
+            resizable.style.left = x + 'px';
+            resizable.style.top = y + 'px';
+        };
+
+        document.onmouseup = function() {
+            document.onmousemove = null;
+            document.onmouseup = null;
+
+            // Capture size and position
+            const size = {
+                width: resizable.offsetWidth,
+                height: resizable.offsetHeight,
+                top: resizable.offsetTop,
+                left: resizable.offsetLeft
+            };
+            
+            // Send data to Flask
+            fetch('/save-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(size),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);  // Log success message
+            });
+        };
+    });
+
+    // Ensure resizing is also constrained within the boundaries
+    resizable.addEventListener('resize', function(e) {
+        // Prevent resizing beyond container
+        const newWidth = resizable.offsetWidth;
+        const newHeight = resizable.offsetHeight;
+
+        if (resizable.offsetLeft + newWidth > containerRect.width) {
+            resizable.style.width = containerRect.width - resizable.offsetLeft + 'px';
+        }
+
+        if (resizable.offsetTop + newHeight > containerRect.height) {
+            resizable.style.height = containerRect.height - resizable.offsetTop + 'px';
+        }
+    });
+
+</script>
+
+</body>
+</html>
