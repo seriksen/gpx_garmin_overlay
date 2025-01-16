@@ -10,11 +10,16 @@ from typing import Any
 
 def extract_first_frame(video_path: str) -> str | None:
     """Extract the first frame from a video file and save it as an image."""
+    print('opening video file...')
+    print(video_path)
+    print('extracting first frame...')
+
     video_capture = cv2.VideoCapture(video_path)
     success, frame = video_capture.read()
     
     if success:
-        frame_path = os.path.join(FRAME_FOLDER, 'frame1.jpg')
+        frame_path = os.path.join('static', 'frame1.jpg')
+        print('frame_path')
         cv2.imwrite(frame_path, frame)  # Save the first frame as an image
         video_capture.release()
         return 'frame1.jpg'

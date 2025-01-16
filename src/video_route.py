@@ -30,6 +30,8 @@ def configure_video_route(app):
         if video_path:
             video_info = get_video_information(video_path)
             video_duration=video_info['duration']
+            app.config['VIDEO_HEIGHT'] = video_info['resolution'].split('x')[1]
+            app.config['VIDEO_WIDTH'] = video_info['resolution'].split('x')[0]
         else:
             video_duration = 0
 

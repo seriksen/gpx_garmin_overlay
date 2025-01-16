@@ -1,3 +1,10 @@
+{% extends 'base.html' %}
+
+{% block title %}Video{% endblock %}
+
+{% block content %}
+<h1>Video Player</h1>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,9 +27,9 @@
         }
         .container {
             position: relative;
-            width: 600px;
-            height: 400px;
-            background: url('/frames/{{ frame }}') no-repeat center center;
+            width: {{ width }}px;
+            height: {{ height }}px;
+            background: url('/static/frame1.jpg') no-repeat center center;
             background-size: cover;
         }
     </style>
@@ -91,3 +98,4 @@
 
 </body>
 </html>
+{% endblock %}
