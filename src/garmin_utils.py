@@ -56,7 +56,7 @@ def get_activity_points(messages: dict) -> pd.DataFrame | None:
     if 'record_mesgs' in messages:
         # Create a pandas DataFrame from the record_mesgs
         # This DataFrame will contain columns for time, distance, speed, and heart rate
-        df = pd.DataFrame(messages['record_megs'])
+        df = pd.DataFrame(messages['record_mesgs'])
         df['speed_kmph'] = df['enhanced_speed'] * 3.6  # Convert speed from m/s to km/h
         df['speed_mph'] = df['speed_kmph'] * 0.621371  # Convert speed from km/h to mph
         df['distance_km'] = df['distance'] / 1000  # Convert distance from meters to kilometers
@@ -71,6 +71,27 @@ def create_speed_plot(df: pd.DataFrame) -> json:
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
 def create_map_plot(df: pd.DataFrame) -> json:
-    fig = px.scatter_geo(df, lat='latitude', lon='longitude', color='speed_kmph',
+    fig = px.scatter_geo(df, lat='position_lat', lon='position_long', color='speed_kmph',
                           title='Location and Speed (km/h)', hover_name='timestamp')
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+def create_elevation_plot(df: pd.DataFrame) -> str:
+    fig = px.line(df, x='timestamp', y='enhanced_altitude', title='Elevation Profile')
+    return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+def create_heart_rate_plot(df: pd.DataFrame) -> str:
+    fig = px.line(df, x='timestamp', y='heart_rate', title='Heart Rate')
+    return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+def create_cadence_plot(df: pd.DataFrame) -> str:
+    fig = px.line(df, x='timestamp', y='cadence', title='Cadence')
+    return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+def create_plots(df: pd.DataFrame) -> dict:
+    return {
+        'speed_plot': create_speed_plot(df),
+        'map_plot': create_map_plot(df),
+        'elevation_plot': create_elevation_plot(df),
+        'heart_rate_plot': create_heart_rate_plot(df),
+        #'cadence_plot': create_cadence_plot(df)
+    }

@@ -1,8 +1,34 @@
-{% extends 'base.html' %}
-
-{% block title %}Garmin{% endblock %}
+{% extends "base.html" %}
 
 {% block content %}
-<h1>Welcome to the Flask App!</h1>
-<p>This is the garmin page.</p>
+<h1>Garmin Activity Data</h1>
+
+{% if activity_info is not none %}
+    <h2>Activity Information</h2>
+    <p>Sport: {{ sport }}</p>
+    <p>Recorder: {{ recorder }}</p>
+
+    <div id="speed-plot"></div>
+    <div id="map-plot"></div>
+    <div id="elevation-plot"></div>
+    <div id="heart-rate-plot"></div>
+    <div id="cadence-plot"></div>
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+        var speedPlot = JSON.parse('{{ plots.speed_plot | safe }}');
+        var mapPlot = JSON.parse('{{ plots.map_plot | safe }}');
+        var elevationPlot = JSON.parse('{{ plots.elevation_plot | safe }}');
+        var heartRatePlot = JSON.parse('{{ plots.heart_rate_plot | safe }}');
+
+        Plotly.newPlot('speed-plot', speedPlot.data, speedPlot.layout);
+        Plotly.newPlot('map-plot', mapPlot.data, mapPlot.layout);
+        Plotly.newPlot('elevation-plot', elevationPlot.data, elevationPlot.layout);
+        Plotly.newPlot('heart-rate-plot', heartRatePlot.data, heartRatePlot.layout);
+        
+    </script>
+{% else %}
+    <p>No activity data available. Please upload a .fit file.</p>
+{% endif %}
+
 {% endblock %}
